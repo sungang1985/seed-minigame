@@ -1,0 +1,15 @@
+{
+  "description": "原生微信小游戏基础框架",
+  "projectname": "wechat-minigame-starter",
+  "appid": "touristappid",
+  "compileType": "game",
+  "miniprogramRoot": "minigame/",
+  "setting": {
+    "es6": true,
+    "minified": true,
+    "urlCheck": true
+  },
+  "packOptions": {
+    "ignore": []
+  }
+}
