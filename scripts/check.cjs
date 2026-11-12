@@ -13,7 +13,7 @@ function filesIn(directory) {
 }
 
 try {
-  const files = ['minigame', 'scripts', 'tests'].flatMap((name) => filesIn(path.join(root, name)));
+  const files = ['minigame', 'cloudfunctions', 'scripts', 'tests'].flatMap((name) => filesIn(path.join(root, name)));
   for (const filename of files) {
     const result = spawnSync(process.execPath, ['--check', filename], { encoding: 'utf8' });
     if (result.error) throw result.error;

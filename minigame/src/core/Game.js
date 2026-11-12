@@ -4,6 +4,8 @@ const Storage = require('../services/Storage');
 const ResourceManager = require('../services/ResourceManager');
 const AudioManager = require('../services/AudioManager');
 const Request = require('../services/Request');
+const AuthService = require('../services/AuthService');
+const SoundService = require('../services/SoundService');
 
 class Game {
   constructor(platform, config) {
@@ -17,6 +19,12 @@ class Game {
     this.storage = new Storage(platform, config.storageNamespace);
     this.resources = new ResourceManager(platform);
     this.audio = new AudioManager(platform, this.storage);
+    this.sound = new SoundService(this.audio);
+    const release = config.release || {};
+    this.auth = new AuthService(platform, {
+      cloudEnv: release.cloudEnv,
+      functionName: release.cloudFunctionName,
+    });
     this.request = new Request(platform);
     this.debug = config.debug;
     this.stats = { fps: 0 };
@@ -33,6 +41,7 @@ class Game {
     this.loading = 0;
     this.ready = false;
     this.error = null;
+    this.toast = null;
     this.tick = this.tick.bind(this);
   }
 
@@ -45,12 +54,18 @@ class Game {
       this.platform.onResize(() => this.resize()),
       this.platform.onPointer((event) => {
         if (!this.paused && this.ready && !this.error) {
+          if (event.type === 'down') this.sound.unlock();
           this.scenes.onPointer({ ...event, x: event.x / this.scale, y: event.y / this.scale });
         }
       }),
       this.platform.onHide(() => this.pause()),
       this.platform.onShow(() => this.resume()),
+      this.auth.onChange((state) => this.events.emit('auth:change', state)),
+      this.events.on('scene:change', () => { this.toast = null; }),
     );
+    if (typeof this.platform.enableShare === 'function') {
+      this.subscriptions.push(this.platform.enableShare());
+    }
     this.scheduleFrame();
     try {
       await this.resources.load(this.config.assets, (completed, total) => {
@@ -100,6 +115,10 @@ class Game {
     const elapsed = this.lastTime === null ? 0 : Math.max(0, (now - this.lastTime) / 1000);
     this.lastTime = now;
     const deltaTime = Math.min(elapsed, this.config.maxDeltaTime);
+    if (this.toast) {
+      this.toast.remaining -= deltaTime;
+      if (this.toast.remaining <= 0) this.toast = null;
+    }
     if (elapsed > 0) this.stats.fps = Math.round(1 / elapsed);
     try {
       if (this.ready && !this.error) this.scenes.update(deltaTime);
@@ -130,6 +149,16 @@ class Game {
       } else {
         this.scenes.render(context);
       }
+      if (this.toast) {
+        const y = Math.max(this.safeArea.top + 28, this.height - this.safeArea.bottom - 60);
+        context.fillStyle = 'rgba(4, 12, 22, 0.94)';
+        context.fillRect(18, y - 22, this.width - 36, 44);
+        context.fillStyle = '#f1f7fb';
+        context.font = '13px sans-serif';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(this.toast.message, this.width / 2, y, this.width - 54);
+      }
       if (this.debug) {
         context.textAlign = 'left';
         context.font = '12px monospace';
@@ -149,6 +178,27 @@ class Game {
     this.events.emit('game:pause');
   }
 
+  notify(message, duration = 2.5) {
+    if (this.destroyed) return;
+    this.toast = { message: String(message), remaining: Math.max(0.5, duration) };
+  }
+
+  async share() {
+    if (typeof this.platform.share !== 'function') {
+      this.notify('请在微信中邀请好友挑战');
+      return false;
+    }
+    try {
+      // 微信不提供可靠的送达回调；这里只表示已请求打开分享界面。
+      await this.platform.share();
+      return true;
+    } catch (error) {
+      this.platform.logError(error);
+      this.notify('暂时无法分享，请稍后重试');
+      return false;
+    }
+  }
+
   resume() {
     if (!this.running || !this.paused) return;
     this.paused = false;
@@ -166,6 +216,7 @@ class Game {
     this.frame = null;
     this.subscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
     this.scenes.clear();
+    this.auth.destroy();
     this.audio.destroy();
     this.resources.clear();
     this.events.clear();

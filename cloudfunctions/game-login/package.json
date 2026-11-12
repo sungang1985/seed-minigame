@@ -1,0 +1,13 @@
+{
+  "name": "seed-minigame-game-login",
+  "version": "1.0.0",
+  "private": true,
+  "description": "微信小游戏可信云身份登录",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "wx-server-sdk": "4.0.2"
+  }
+}

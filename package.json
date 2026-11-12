@@ -1,12 +1,16 @@
 {
   "name": "wechat-minigame-starter",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "原生微信小游戏基础框架与零依赖浏览器预览",
+  "description": "星星收集：真实微信云身份、原创音频与发布打包",
   "scripts": {
     "dev": "node scripts/dev.cjs",
     "check": "node scripts/check.cjs",
-    "test": "node --test tests/*.test.cjs"
+    "test": "node --test tests/*.test.cjs",
+    "audio:generate": "node scripts/generate-audio.cjs",
+    "release": "node scripts/release.cjs",
+    "release:candidate": "node scripts/release.cjs --candidate",
+    "release:verify": "node scripts/verify-release.cjs dist/seed-minigame-1.1.0"
   },
   "engines": {
     "node": ">=18"

@@ -1,0 +1,7 @@
+{
+  "name": "星星收集",
+  "version": "1.1.0",
+  "appId": "",
+  "cloudEnv": "",
+  "cloudFunctionName": "game-login"
+}

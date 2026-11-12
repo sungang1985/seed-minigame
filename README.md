@@ -1,140 +1,88 @@
-# 微信小游戏基础框架
+# 星星收集 · 微信小游戏 v1.1.0
 
-原生 JavaScript + Canvas 2D，无第三方运行依赖。包含可运行的「星星收集」演示，以及浏览器预览、微信平台适配和基础服务。适合作为轻量 2D 微信小游戏的起点。
+原生 JavaScript + Canvas 2D 的 30 秒收集小游戏，支持游客游玩、微信云身份登录、原创音乐与音效、声音开关、隐私说明和好友分享。客户端没有第三方运行依赖，无需构建 npm。
 
-## 运行
+## 运行与交付状态
 
-### 微信开发者工具
+项目包含完整客户端、登录云函数和发布工具。当前尚无真实小游戏 AppID 和云开发环境 ID，默认可体验游客流程；候选包不代表云函数已部署、真机已验收或微信审核已完成。
 
-1. 安装微信开发者工具，选择 **小游戏 → 导入项目**。
-2. 项目目录选择本仓库根目录（包含 `project.config.json`），代码目录已配置为 `minigame/`。
-3. 将 `project.config.json` 的 `appid` 从 `touristappid` 换成自己的**小游戏 AppID**，然后编译。工具支持游客模式时也可先选择游客模式体验。
-4. 使用真机调试检查触摸、安全区、音频和前后台切换。上传、预览二维码和发布需要有效 AppID 及对应权限。
-
-微信端直接运行 `minigame/game.js`，不需要执行 npm 安装、构建或「构建 npm」。
-
-### 浏览器预览
-
-需要 Node.js 18 或更新版本，在仓库根目录执行：
+浏览器预览需要 Node.js 18 或更新版本，在源码根目录执行：
 
 ```bash
 npm run dev
 ```
 
-打开 <http://localhost:3000>。支持鼠标、触屏，以及三种屏幕尺寸。修改源码后刷新页面。可用 `PORT=3001 npm run dev` 更换端口。
+打开 <http://localhost:3000>。首次点击后播放背景音乐，声音偏好和最高纪录保存在本机。浏览器不具备微信身份，不会模拟登录成功。
 
-预览直接使用同一套游戏逻辑，开发服务器会在内存中打包 CommonJS 模块。浏览器通过 localStorage、HTML Audio 和 fetch 模拟相应能力；微信 API 行为仍需在开发者工具和真机上确认。
+微信开发者工具选择小游戏，导入包含 `project.config.json` 的项目根目录。默认 `touristappid` 仅用于工具允许的游客体验，真实登录和上传需自己的小游戏 AppID。
+
+## 生成发布包
+
+在 `release.config.json` 填写真实 `appId` 和已关联的 `cloudEnv`：
 
 ```bash
-npm run check   # 语法、JSON 与预览模块依赖检查
-npm test        # 核心生命周期、平台适配和服务回归测试
+npm run check
+npm test
+npm run release
 ```
 
-## 已包含
+生成 `dist/seed-minigame-1.1.0/` 和同名 ZIP，内含可导入开发者工具的原生客户端、素材、云函数、导入文档和 SHA256 文件清单。缺少有效账号配置时，严格发布命令会明确失败。
 
-- 游戏循环：秒制 deltaTime、时间步长上限、前后台暂停恢复、销毁清理。
-- 屏幕适配：375 逻辑宽度、动态高度、高 DPI、底部安全区和微信右上角胶囊避让。
-- 场景管理：注册、切换、独立实例、生命周期、场景事件自动解绑。
-- 输入：微信触摸与浏览器 Pointer Events 统一，支持点按、拖动和取消。
-- 资源：图片预加载、进度、缓存、并发去重、失败重试与清理。
-- 服务：事件总线、命名空间存储、音频静音和前后台恢复、Promise HTTP 请求。
-- 演示：开始 → 30 秒收集星星 → 暂停/继续 → 结算 → 重玩/返回，保存最高纪录。
+账号尚未配置时可先生成候选包：
 
-## 目录
+```bash
+npm run release:candidate
+npm run release:verify
+```
+
+缺项与部署步骤记录在 `RELEASE_STATUS.json` 中。打包只改生成目录中的账号配置，源码预览保留游客配置。微信账号绑定、云函数部署、真机验收、上传和平台审核仍需在对应账号中完成，详见 [发布说明](docs/release.md)。
+
+## 真实微信登录
+
+用户主动点击登录后，`wx.cloud.callFunction()` 调用 `game-login`。云函数从可信微信上下文获取身份，返回本游戏专用的 SHA-256 玩家标识与「星光旅人…」称呼，不读取头像、昵称或手机号，不生成客户端假 token。
+
+在与本游戏关联的云开发环境中，右键 `cloudfunctions/game-login`，选择“上传并部署：云端安装依赖”。已固定 `wx-server-sdk@4.0.2`，无需数据库、AppSecret 或自建登录服务器。步骤见 [云登录说明](docs/cloud-login.md)。
+
+登录状态只保存在当前进程，退出后恢复游客。最高纪录和声音偏好仅存本机；当前没有云存档、跨设备成绩同步或排行榜。数据用途见 [数据说明](docs/data-usage.md)。
+
+## 音频与分享
+
+- `bgm.wav`：10 秒原创五声音阶循环音乐。
+- `collect.wav`、`start.wav`、`finish.wav`、`tap.wav`：收集、开始、结算与按钮音效。
+- 五个音频为 22,050 Hz 单声道 16 bit PCM WAV，合计约 532 KiB；[CC0 授权](minigame/assets/audio/LICENSE.txt) 随包提供。
+- 首页和暂停页可切换声音；切后台暂停，返回后恢复，尊重微信设备静音设置。
+- 结果页可唤起微信好友分享，使用固定标题及原创图案；不读取通讯录、不提供分享奖励，也不把唤起分享当作已送达。
+
+音频可用 `npm run audio:generate` 重现。图标与分享图位于 `minigame/assets/icon.png`、`share.png`，来源见 [图案说明](minigame/assets/ARTWORK_LICENSE.txt)。
+
+## 目录与扩展
 
 ```text
-project.config.json             微信开发者工具项目配置
-minigame/
-  game.js                       微信入口
-  game.json                     竖屏配置
-  assets/                       图片、音频等本地资源
-  src/
-    main.js                     创建 Game 并注册场景
-    config/game.js              逻辑宽度、DPR、调试开关、资源清单
-    core/                       Game / Scene / SceneManager / EventBus
-    platform/                   WeChatPlatform / BrowserPlatform
-    services/                   Storage / ResourceManager / AudioManager / Request
-    scenes/                     MenuScene / PlayScene / ResultScene
-    ui/draw.js                  Canvas 绘图工具
-preview/index.html              浏览器预览外壳
-scripts/                        零依赖开发服务器和检查工具
-tests/                          Node.js 回归测试
+release.config.json             发布名称、版本、AppID、云环境
+project.config.json             微信开发者工具配置
+minigame/game.js / game.json     原生入口与竖屏配置
+minigame/assets/                原创音频、图标和分享图
+minigame/src/config/            游戏、音频与发布配置
+minigame/src/core/              循环、场景、事件
+minigame/src/platform/          微信和浏览器适配
+minigame/src/services/          登录、声音、资源、存储、请求
+minigame/src/scenes/            首页、游戏、结算
+cloudfunctions/game-login/      可信微信身份云函数
+docs/                          发布、登录和数据说明
+scripts/                       预览、检查、素材生成与打包
+tests/                         核心、服务、平台、场景和打包测试
 ```
 
-## 添加场景
-
-创建 `minigame/src/scenes/MyScene.js`：
+继承 `src/core/Scene` 并在 `src/main.js` 注册场景。每次切换会创建新实例，`this.listen()` 订阅在退出时自动释放。宽度固定为 375 逻辑坐标，高度随窗口比例变化；安全区表示边距，触摸坐标已转换，`update(dt)` 单位为秒。
 
 ```javascript
-const Scene = require('../core/Scene');
-
-class MyScene extends Scene {
-  enter(data) {
-    this.elapsed = 0;
-    this.listen('game:pause', () => {
-      // 清除当前场景的拖动、按键等临时状态。
-    });
-  }
-
-  update(dt) {
-    this.elapsed += dt;
-  }
-
-  render(ctx) {
-    ctx.fillStyle = '#101f32';
-    ctx.fillRect(0, 0, this.game.width, this.game.height);
-  }
-
-  onPointer(event) {
-    // type: down / move / up / cancel
-    // x、y 已转换为逻辑坐标，id 表示触点。
-    if (event.type === 'down') this.game.scenes.change('menu');
-  }
-
-  exit() {
-    // 释放场景自己创建的定时器等资源。
-  }
-}
-
-module.exports = MyScene;
-```
-
-在 `src/main.js` 中引入并调用 `game.scenes.register('my-scene', MyScene)`，然后通过 `game.scenes.change('my-scene', { ... })` 进入。每次进入都会创建新实例；`this.listen()` 的事件监听会在退出时自动释放。异步操作和定时器由场景自行取消。
-
-`game.width` 固定为 375，`game.height` 根据窗口比例计算；`game.safeArea` 的四个值都是逻辑坐标的**边距**。渲染和输入都使用逻辑坐标。调试 FPS 可在 `src/config/game.js` 设置 `debug: true`。
-
-## 资源与服务
-
-将资源放在 `minigame/assets/`，在 `src/config/game.js` 添加清单：
-
-```javascript
-assets: [
-  { key: 'hero', type: 'image', src: 'assets/hero.png' },
-]
-```
-
-框架完成预加载后进入首页，可通过 `game.resources.get('hero')` 获取图片并调用 `ctx.drawImage()`。同一 key 不可绑定不同路径；加载失败会显示失败提示并记录控制台错误，修复后重新进入。演示使用程序绘图，默认资源清单为空。
-
-```javascript
+game.scenes.change('play');
+game.sound.setMuted(true);
 game.storage.set('coins', 10);
-const coins = game.storage.get('coins', 0);
-
-game.audio.play('bgm', 'assets/bgm.mp3', { loop: true, volume: 0.5 });
-game.audio.setMuted(true);  // 偏好会持久化
-game.audio.stop('bgm');
-
-const unsubscribe = game.events.on('game:score', ({ score }) => {
-  console.log(score);
-});
-unsubscribe();
-
-// 自行配置真实后端，返回 { statusCode, data, header }；非 2xx 会拒绝。
-game.request.baseUrl = 'https://your-api.example.com';
-game.request.get('/profile').then(({ data }) => console.log(data)).catch(console.error);
+game.auth.login().then(user => console.log(user.displayName)).catch(console.error);
+game.notify('准备好收集星光了吗');
 ```
 
-音频资源需要自行添加；在用户触摸回调中首次播放以满足平台的音频策略。HTTP 服务没有预置登录和后端；微信请求需在小游戏后台配置合法域名，浏览器预览需满足后端 CORS 设置。
+HTTP 服务保留，可通过 `game.request.baseUrl` 配置合法域名。云登录不需要额外 HTTP 登录接口；新增受保护的服务端业务仍应逐次使用可信微信上下文鉴权，不能信任客户端玩家 ID。
 
-`game.pause()` / `game.resume()` 用于引擎生命周期，暂停时停止帧调度；场景内需要可点击的暂停弹层时，像 `PlayScene` 一样保留渲染和输入，仅暂停自己的计时与逻辑。
-
-此基础框架尚未接入登录、分享、广告、支付、云开发和排行榜。接入时可在 `services/` 新增业务服务，并通过平台层隔离微信专用 API。
+自动测试覆盖登录竞态、失败重试、音频生命周期、游戏交互和包内容，不替代微信开发者工具编译、实际云部署与真机验收。

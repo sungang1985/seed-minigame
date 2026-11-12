@@ -62,7 +62,45 @@ class WeChatPlatform {
   cancelFrame(handle) { cancelAnimationFrame(handle); }
   now() { return Date.now(); }
   createImage() { return this.api.createImage(); }
-  createAudio() { return this.api.createInnerAudioContext(); }
+  createAudio() {
+    const context = this.api.createInnerAudioContext();
+    context.obeyMuteSwitch = true;
+    return context;
+  }
+
+  async authenticate({ cloudEnv, functionName }) {
+    if (!cloudEnv || !this.api.cloud || typeof this.api.cloud.callFunction !== 'function') {
+      throw new Error('微信云登录当前不可用');
+    }
+    if (this.cloudEnvironment !== cloudEnv) {
+      this.api.cloud.init({ env: cloudEnv, traceUser: false });
+      this.cloudEnvironment = cloudEnv;
+    }
+    // 云调用携带可信微信身份，由云函数 getWXContext 校验；无需客户端保存 token。
+    const response = await this.api.cloud.callFunction({
+      name: functionName,
+      data: {},
+      config: { env: cloudEnv },
+    });
+    return response.result;
+  }
+
+  shareData() {
+    return { title: '30 秒收集星光，你能拿多少分？', imageUrl: 'assets/share.png' };
+  }
+
+  enableShare() {
+    if (this.api.showShareMenu) this.api.showShareMenu({ menus: ['shareAppMessage'] });
+    const handler = () => this.shareData();
+    if (this.api.onShareAppMessage) this.api.onShareAppMessage(handler);
+    return () => { if (this.api.offShareAppMessage) this.api.offShareAppMessage(handler); };
+  }
+
+  share() {
+    if (!this.api.shareAppMessage) return Promise.reject(new Error('当前版本不支持分享'));
+    this.api.shareAppMessage(this.shareData());
+    return Promise.resolve();
+  }
   getStorage(key) {
     const value = this.api.getStorageSync(key);
     // 微信对不存在的 key 返回空串，统一成与浏览器相同的缺省值。

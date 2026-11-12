@@ -49,7 +49,8 @@ class PlayScene extends Scene {
       field: { x: 34, y: top + 164, width: width - 68, height: Math.max(100, height - top - bottom - 222) },
       pause: { x: width - 76, y: top, width: 52, height: 34 },
       resume: { x: 52, y: middle + 20, width: width - 104, height: 52 },
-      finish: { x: 52, y: middle + 88, width: width - 104, height: 44 }
+      finish: { x: 52, y: middle + 88, width: width - 104, height: 44 },
+      sound: { x: 92, y: middle + 149, width: width - 184, height: 38 }
     };
   }
 
@@ -83,6 +84,7 @@ class PlayScene extends Scene {
     const previousBest = Number(this.game.storage.get('bestScore', 0)) || 0;
     const best = Math.max(previousBest, this.score);
     this.game.storage.set('bestScore', best);
+    this.game.sound.finish();
     this.game.events.emit('game:finish', { score: this.score, best });
     this.game.scenes.change('result', { score: this.score, best, isNewBest: this.score > previousBest });
   }
@@ -96,6 +98,7 @@ class PlayScene extends Scene {
       this.stars.splice(index, 1);
       this.stars.push(this.spawnStar());
       this.score += 1;
+      this.game.sound.collect();
       this.game.events.emit('game:score', { score: this.score });
     }
   }
@@ -109,11 +112,20 @@ class PlayScene extends Scene {
     }
     if (this.paused) {
       if (event.type !== 'down') return;
-      if (draw.inside(event, layout.resume)) this.paused = false;
-      else if (draw.inside(event, layout.finish)) this.finish();
+      if (draw.inside(event, layout.resume)) {
+        this.game.sound.tap();
+        this.paused = false;
+      } else if (draw.inside(event, layout.finish)) {
+        this.game.sound.tap();
+        this.finish();
+      } else if (draw.inside(event, layout.sound)) {
+        this.game.sound.setMuted(!this.game.sound.muted);
+        this.game.sound.tap();
+      }
       return;
     }
     if (event.type === 'down' && draw.inside(event, layout.pause)) {
+      this.game.sound.tap();
       this.paused = true;
       this.pointerId = null;
       return;
@@ -165,7 +177,7 @@ class PlayScene extends Scene {
 
   renderPause(ctx) {
     const { width, height } = this.game;
-    const { resume, finish } = this.layout();
+    const { resume, finish, sound } = this.layout();
     ctx.fillStyle = 'rgba(5,12,21,0.83)';
     ctx.fillRect(0, 0, width, height);
     draw.star(ctx, width / 2, height / 2 - 112, 25, draw.COLORS.primary);
@@ -173,6 +185,9 @@ class PlayScene extends Scene {
     draw.text(ctx, '星光会等你回来', width / 2, height / 2 - 18, 13, draw.COLORS.muted, 'center');
     draw.button(ctx, resume, '继续游戏');
     draw.button(ctx, finish, '结束并结算', true);
+    draw.panel(ctx, sound);
+    draw.text(ctx, this.game.sound.muted ? '声音：关' : '声音：开', width / 2,
+      sound.y + sound.height / 2, 13, draw.COLORS.muted, 'center');
   }
 }
 

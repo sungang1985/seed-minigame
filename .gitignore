@@ -5,3 +5,8 @@ dist/
 *.log
 project.private.config.json
 artifacts/
+*.key
+*.pem
+.env
+.env.*
+!.env.example

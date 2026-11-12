@@ -71,6 +71,7 @@ class BrowserPlatform {
       },
       pause() { audio.pause(); },
       stop() { audio.pause(); audio.currentTime = 0; },
+      seek(seconds) { audio.currentTime = seconds; },
       destroy() { audio.pause(); audio.removeAttribute('src'); audio.load(); },
       onError(listener) { errorListener = listener; audio.onerror = listener; },
       onEnded(listener) { audio.onended = listener; },

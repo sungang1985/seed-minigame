@@ -1,0 +1,14 @@
+星星收集 / Star Collector — 原创程序合成音频
+
+文件：bgm.wav、collect.wav、start.wav、finish.wav、tap.wav
+来源：本仓库 scripts/generate-audio.cjs 的原创音序与数字振荡器合成。
+未使用外部录音、采样、旋律或音色库；无第三方素材依赖。
+运行 node scripts/generate-audio.cjs 可逐字节重新生成所有 WAV。
+
+本目录五个 WAV 资源以 CC0 1.0 Universal 许可贡献至公共领域。
+在法律允许范围内，放弃这些音频资源的版权及相关权利。
+可免费复制、修改、分发、商业使用及随小游戏发布，无需署名或版税。
+完整许可：https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+格式：22050 Hz / 单声道 / 16-bit PCM WAV。
+bgm 为 10 秒循环音乐；其余为短音效。生成过程使用包络淡入淡出和峰值限制。

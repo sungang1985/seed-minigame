@@ -1,4 +1,7 @@
+const release = require('./release');
+
 module.exports = {
+  release,
   designWidth: 375,
   maxPixelRatio: 3,
   maxDeltaTime: 0.05,

@@ -1,0 +1,6 @@
+星星收集图标与分享图
+
+icon.png、share.png 为本项目程序绘制的原创几何星空图案，未使用第三方图片。
+作者将上述素材按 CC0 1.0 贡献，可用于本小游戏及衍生作品，包括商用。
+重新生成的源脚本：scripts/generate-artwork.cjs（需单独准备 Playwright 浏览器）。
+CC0：https://creativecommons.org/publicdomain/zero/1.0/
